@@ -11,12 +11,6 @@ import plotly.express as px
 from git.repo.base import Repo
 
 #MySQlConnection
-import os
-import json
-import pandas as pd
-import mysql.connector
-from sqlalchemy import create_engine
-
 import mysql.connector
 mydb = mysql.connector.connect(
   host="localhost",
