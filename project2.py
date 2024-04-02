@@ -11,8 +11,11 @@ import plotly.express as px
 from git.repo.base import Repo
 
 #MySQlConnection
-
-
+import os
+import json
+import pandas as pd
+import mysql.connector
+from sqlalchemy import create_engine
 
 import mysql.connector
 mydb = mysql.connector.connect(
@@ -22,19 +25,13 @@ mydb = mysql.connector.connect(
   database="phonepe_pulse"
 )
 mycursor = mydb.cursor(buffered=True)
-Engine=create_engine("mysql+pymysql://root:12345@localhost/phonepe_pulse")
+
+Engine = create_engine("mysql+mysqlconnector://root:12345@localhost/phonepe_pulse")
+
 
 #Repo.clone_from("https://github.com/PhonePe/pulse.git","D:\DS\Capstone projects\New folder\phonepe") 
 
-def finalfun():
-    a1=aggregate_transact()
-    a2=aggregate_user()
-    b1=map_transact()
-    b2=map_user()
-    c1=top_transact()
-    c2=top_user()
     
-
 def aggregate_transact():
     try:
         mycursor.execute("use phonepe_pulse")
@@ -69,6 +66,7 @@ def aggregate_transact():
     df = pd.DataFrame(ls)
     df["amount"] = df["amount"].astype(float)  # Correcting amount column type conversion
     df.to_sql("agg_t", Engine, if_exists="append", index=False)  # Assuming Engine is your SQL Alchemy engine object
+    return df
     
 def aggregate_user():
     try:
@@ -102,74 +100,79 @@ def aggregate_user():
 
     df = pd.DataFrame(ls)
     df.to_sql("agg_u", Engine, if_exists="append", index=False)
+    return df
     
 def map_transact():
     try:
         mycursor.execute("use phonepe_pulse")
-    except:
+    except mysql.connector.Error as err:
         mycursor.execute("create database phonepe_pulse")
         mycursor.execute("use phonepe_pulse")
-        
-path_1 = r"D:\DS\Capstone projects\New folder\phonepe\pulse\data\map\transaction\hover\country\india\state"
-map_tran_state_list = os.listdir(path_1)
 
-ls = []
-for i in map_tran_state_list:
-    p = os.path.join(path_1, i)  # Using os.path.join for path concatenation
-    map_year = os.listdir(p)
-    for j in map_year:
-        p_y = os.path.join(p, j)  # Using os.path.join for path concatenation
-        files = os.listdir(p_y)
-        for file in files:
-            with open(os.path.join(p_y, file)) as json_file:  # Using os.path.join for file path
-                data = json.load(json_file)
-                for k in data["data"]["hoverDataList"]:
-                    final = dict(Year=int(j),
-                                 state=i,
-                                 district_name=k["name"],
-                                 count=int(k["metric"][0]["count"]),
-                                 amount="{:.2f}".format(k["metric"][0]["amount"]),
-                                 quarter=int(file.strip('.json')))
-                    ls.append(final)
+    path_1 = r"D:\DS\Capstone projects\New folder\phonepe\pulse\data\map\transaction\hover\country\india\state"
+    map_tran_state_list = os.listdir(path_1)
 
-df = pd.DataFrame(ls)
-#print(df)
-df["amount"].astype(float)
-df.to_sql("map_t", Engine, if_exists="append", index=False)
+    ls = []
+    for i in map_tran_state_list:
+        p = os.path.join(path_1, i)  # Using os.path.join for path concatenation
+        map_year = os.listdir(p)
+        for j in map_year:
+            p_y = os.path.join(p, j)  # Using os.path.join for path concatenation
+            files = os.listdir(p_y)
+            for file in files:
+                with open(os.path.join(p_y, file)) as json_file:  # Using os.path.join for file path
+                    data = json.load(json_file)
+                    for k in data["data"]["hoverDataList"]:
+                        final = dict(Year=int(j),
+                                     state=i,
+                                     district_name=k["name"],
+                                     count=int(k["metric"][0]["count"]),
+                                     amount="{:.2f}".format(k["metric"][0]["amount"]),
+                                     quarter=int(file.strip('.json')))
+                        ls.append(final)
+
+    df = pd.DataFrame(ls)
+    df["amount"] = df["amount"].astype(float)  # Convert "amount" column to float
+
+    # Assuming 'Engine' is defined elsewhere
+    df.to_sql("map_t", Engine, if_exists="append", index=False)
+    return df
     
 def map_user():
     try:
         mycursor.execute("use phonepe_pulse")
-    except:
+    except mysql.connector.Error as err:
         mycursor.execute("create database phonepe_pulse")
         mycursor.execute("use phonepe_pulse")
-        
-path_1 = r"D:\DS\Capstone projects\New folder\phonepe\pulse\data\map\user\hover\country\india\state"
-map_user_state_list = os.listdir(path_1)
-ls = []
-
-for i in map_user_state_list:
-    p = os.path.join(path_1, i)  # Using os.path.join for path concatenation
-    map_year = os.listdir(p)
-    for j in map_year:
-        p_y = os.path.join(p, j)
-        files = os.listdir(p_y)
-        for file in files:
-            with open(os.path.join(p_y, file)) as json_file:
-                data = json.load(json_file)
-                for k in data["data"]["hoverData"].items():
-                    final = dict(Year=int(j),
-                                 state=i,
-                                 district_name=k[0],
-                                 registereduser=int(k[1]["registeredUsers"]),
-                                 appopens=int(k[1]["appOpens"]),
-                                 quarter=int(file.strip('.json')))
-                    ls.append(final)
-
-df = pd.DataFrame(ls)
-#print(df)
-df.to_sql("map_u", Engine, if_exists="append",index=False)
+    path_1 = r"D:\DS\Capstone projects\New folder\phonepe\pulse\data\map\user\hover\country\india\state"
+    map_user_state_list = os.listdir(path_1)
     
+    ls = []
+    for i in map_user_state_list:
+        p = os.path.join(path_1, i)  # Using os.path.join for path concatenation
+        map_year = os.listdir(p)
+        for j in map_year:
+            p_y = os.path.join(p, j)
+            files = os.listdir(p_y)
+            for file in files:
+                with open(os.path.join(p_y, file)) as json_file:
+                    data = json.load(json_file)
+                    for k in data["data"]["hoverData"].items():
+                        final = dict(Year=int(j),
+                                     state=i,
+                                     district_name=k[0],
+                                     registereduser=int(k[1]["registeredUsers"]),
+                                     appopens=int(k[1]["appOpens"]),
+                                     quarter=int(file.strip('.json')))
+                        ls.append(final)
+
+    df = pd.DataFrame(ls)
+
+    # Save DataFrame to SQL table
+    df.to_sql(name='map_u', con=Engine, if_exists='append', index=False)
+    return df
+
+  
 def top_transact():
     try:
         mycursor.execute("use phonepe_pulse")
@@ -207,6 +210,7 @@ def top_transact():
     df = pd.DataFrame(ls)
     df["amount"] = df["amount"].astype(float)  # Correct way to convert 'amount' to float
     df.to_sql("top_t", Engine, if_exists="append", index=False)
+    return df
     
 def top_user():
     try:
@@ -241,8 +245,8 @@ def top_user():
     df.to_sql("top_u", Engine, if_exists="append", index=False)
     return df
 
-finalfun()
-
+mycursor.close()
+mydb.close()
 
 import json
 import pandas as pd
