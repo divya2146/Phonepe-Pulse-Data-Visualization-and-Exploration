@@ -459,7 +459,7 @@ with tab3:
         df["quarter"]=df["quarter"].astype(str)
         fig=px.bar(df,x="quarter",y="Transactions",color=df["Transactions"])
         st.plotly_chart(fig)
-        st.success("Third Quarter Tops the Chart with far margin")
+        st.success("Fourth Quarter Tops the Chart with far margin")
     elif(questions=="The Quarter which tops the transaction value list very often across years"):
         mycursor.execute("select quarter, sum(amount) from agg_t group by quarter")
         out=mycursor.fetchall()
@@ -467,7 +467,7 @@ with tab3:
         fig=px.bar(df,x="quarter",y="Transactions",color=df["Transactions"])
         df["quarter"]=df["quarter"].astype(str)
         st.plotly_chart(fig)
-        st.success("Third Quarter Tops the Chart with far margin")
+        st.success("Fourth Quarter Tops the Chart with far margin")
     elif(questions=="The State which has most the PhonePe Registered users All time"):
         mycursor.execute("select state, sum(registeredusers) from top_u group by state order by sum(registeredusers) desc limit 5")
         out=mycursor.fetchall()
